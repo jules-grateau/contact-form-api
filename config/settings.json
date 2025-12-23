@@ -1,0 +1,18 @@
+{
+  "app": {
+    "name": "Contact Form API",
+    "version": "1.0.0"
+  },
+  "email": {
+    "toEmail": "jules.grateau@gmail.com",
+    "fromName": "Formulaire de Contact"
+  },
+  "api": {
+    "port": 3000,
+    "prefix": "/api"
+  },
+  "validation": {
+    "minMessageLength": 10,
+    "maxMessageLength": 5000
+  }
+}

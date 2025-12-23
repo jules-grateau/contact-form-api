@@ -1,0 +1,39 @@
+{
+    "name": "contact-form-api",
+    "version": "1.0.0",
+    "description": "REST API for contact form email sending",
+    "main": "dist/index.js",
+    "scripts": {
+        "dev": "ts-node src/index.ts",
+        "build": "tsc",
+        "start": "node dist/index.js",
+        "lint": "eslint src --ext .ts"
+    },
+    "keywords": [
+        "contact",
+        "form",
+        "email",
+        "api",
+        "resend"
+    ],
+    "author": "",
+    "license": "MIT",
+    "repository": {
+        "type": "git",
+        "url": "https://github.com/jules-grateau/contact-form-api.git"
+    },
+    "dependencies": {
+        "express": "^4.18.2",
+        "resend": "^3.0.0",
+        "dotenv": "^16.3.1"
+    },
+    "devDependencies": {
+        "@types/express": "^4.17.21",
+        "@types/node": "^20.10.5",
+        "typescript": "^5.3.3",
+        "ts-node": "^10.9.2",
+        "@typescript-eslint/eslint-plugin": "^6.16.0",
+        "@typescript-eslint/parser": "^6.16.0",
+        "eslint": "^8.56.0"
+    }
+}
