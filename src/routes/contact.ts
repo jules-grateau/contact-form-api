@@ -5,14 +5,14 @@ import { ApiResponse } from "../types";
 const router = Router();
 
 router.post(
-  "/contact",
+  "/contact/:clientId",
   async (req: Request, res: Response<ApiResponse<{ messageId: string }>>) => {
     try {
-      // Accept any form data without validation
+      const { clientId } = req.params;
       const contactData = req.body;
 
-      // Send email
-      const result = await sendContactEmail(contactData);
+      // Send email with client-specific configuration
+      const result = await sendContactEmail(contactData, clientId);
 
       if (!result.success) {
         return res.status(500).json(result);

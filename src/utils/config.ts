@@ -1,28 +1,26 @@
 import fs from "fs";
 import path from "path";
 
+interface ClientConfig {
+  toEmail: string;
+  fromName: string;
+}
+
 interface AppSettings {
   app: {
     name: string;
     version: string;
   };
-  email: {
-    fromEmail: string;
-    toEmail: string;
-    fromName: string;
-  };
   api: {
     port: number;
     prefix: string;
-  };
-  validation: {
-    minMessageLength: number;
-    maxMessageLength: number;
   };
 }
 
 class ConfigManager {
   private settings: AppSettings;
+  private fromEmail: string;
+  private clients: Map<string, ClientConfig>;
 
   constructor() {
     // The config directory is located at the project root: /config/settings.json
@@ -43,14 +41,29 @@ class ConfigManager {
       throw new Error("FROM_EMAIL environment variable must be set");
     }
 
-    if (!this.settings.email) {
-      this.settings.email = {
-        fromEmail,
-        toEmail: "",
-        fromName: "",
-      } as any;
-    } else {
-      this.settings.email.fromEmail = fromEmail;
+    this.fromEmail = fromEmail;
+
+    // Load client configurations from CLIENTS_CONFIG environment variable
+    this.clients = this.loadClientsFromEnv();
+  }
+
+  private loadClientsFromEnv(): Map<string, ClientConfig> {
+    const clientsJson = process.env.CLIENTS_CONFIG;
+    if (!clientsJson) {
+      throw new Error(
+        "CLIENTS_CONFIG environment variable must be set (JSON format)"
+      );
+    }
+
+    try {
+      const clientsObj = JSON.parse(clientsJson);
+      return new Map(Object.entries(clientsObj));
+    } catch (error) {
+      throw new Error(
+        `CLIENTS_CONFIG must be valid JSON. Error: ${
+          error instanceof Error ? error.message : "Unknown error"
+        }`
+      );
     }
   }
 
@@ -58,16 +71,22 @@ class ConfigManager {
     return this.settings;
   }
 
-  getEmailConfig() {
-    return this.settings.email;
+  getFromEmail(): string {
+    return this.fromEmail;
+  }
+
+  getClientConfig(clientId: string): ClientConfig {
+    const clientConfig = this.clients.get(clientId);
+    if (!clientConfig) {
+      throw new Error(
+        `Client configuration not found for clientId: ${clientId}`
+      );
+    }
+    return clientConfig;
   }
 
   getApiConfig() {
     return this.settings.api;
-  }
-
-  getValidationRules() {
-    return this.settings.validation;
   }
 }
 

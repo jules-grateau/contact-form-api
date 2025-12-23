@@ -10,6 +10,7 @@ services:
       - PORT=3000
       - RESEND_API_KEY=${RESEND_API_KEY}
       - FROM_EMAIL=${FROM_EMAIL}
+      - CLIENTS_CONFIG=${CLIENTS_CONFIG}
     healthcheck:
       test:
         [
