@@ -109,21 +109,22 @@ Health check — returns a 200 JSON response in French:
 
 ## Configuration
 
-`config/settings.json` contains additional application settings (app name, toEmail, etc.). Note: `fromEmail` is ignored in favor of the `FROM_EMAIL` environment variable. Make sure `toEmail` in `config/settings.json` is set to the recipient address that should receive form submissions.
-
-Example `config/settings.json` (only `toEmail` and `fromName` are used at runtime; `fromEmail` comes from env):
+`config/settings.json` contains application settings:
 
 ```json
 {
-  "app": { "name": "API Formulaire de Contact", "version": "1.0.0" },
+  "app": { "name": "Contact Form API", "version": "1.0.0" },
   "email": {
-    "fromEmail": "ignored@example.com",
-    "toEmail": "contact@yourdomain.com",
+    "toEmail": "recipient@example.com",
     "fromName": "Formulaire de Contact"
   },
   "api": { "port": 3000, "prefix": "/api" }
 }
 ```
+
+- **`toEmail`** — recipient address for form submissions
+- **`fromName`** — sender name displayed in emails
+- **`fromEmail`** — NOT in config; use the `FROM_EMAIL` environment variable instead
 
 ## Docker
 
