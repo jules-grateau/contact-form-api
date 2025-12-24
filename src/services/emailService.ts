@@ -2,6 +2,7 @@ import { ApiResponse } from "../types";
 import { resendClient } from "../utils/resend";
 import { configManager } from "../utils/config";
 import { generateEmailTemplate } from "../utils/emailTemplate";
+import { errorMessages, successMessages, generalMessages } from "../i18n/fr";
 
 export async function sendContactEmail(
   data: any,
@@ -14,7 +15,7 @@ export async function sendContactEmail(
     const response = await resendClient.emails.send({
       from: `${clientConfig.fromName} <${fromEmail}>`,
       to: clientConfig.toEmail,
-      subject: `Nouvelle soumission du formulaire de contact${
+      subject: `${generalMessages.newContactFormSubmission}${
         data?.name ? ` de ${data.name}` : ""
       }`,
       html: generateEmailTemplate(data),
@@ -23,24 +24,24 @@ export async function sendContactEmail(
     if (response.error) {
       return {
         success: false,
-        message: "Échec de l'envoi du courriel",
+        message: errorMessages.emailSendFailed,
         error: response.error.message,
       };
     }
 
     return {
       success: true,
-      message: "Courriel envoyé avec succès",
+      message: successMessages.emailSendSuccess,
       data: {
-        messageId: response.data?.id || "inconnu",
+        messageId: response.data?.id || generalMessages.unknown,
       },
     };
   } catch (error) {
     const errorMessage =
-      error instanceof Error ? error.message : "Erreur inconnue";
+      error instanceof Error ? error.message : errorMessages.unknownError;
     return {
       success: false,
-      message: "Échec de l'envoi du courriel",
+      message: errorMessages.emailSendFailed,
       error: errorMessage,
     };
   }

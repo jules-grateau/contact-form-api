@@ -1,9 +1,12 @@
 import fs from "fs";
 import path from "path";
+import { errorMessages } from "../i18n/fr";
 
 interface ClientConfig {
   toEmail: string;
   fromName: string;
+  maxMessageSize?: number;
+  hourlyRateLimit?: number;
 }
 
 interface AppSettings {
@@ -27,9 +30,7 @@ class ConfigManager {
     const configPath = path.join(__dirname, "../../config/settings.json");
 
     if (!fs.existsSync(configPath)) {
-      throw new Error(
-        `Configuration file not found at ${configPath}. Please ensure config/settings.json exists.`
-      );
+      throw new Error(errorMessages.configNotFound(configPath));
     }
 
     const rawData = fs.readFileSync(configPath, "utf-8");
@@ -38,7 +39,7 @@ class ConfigManager {
     // The sender email must be provided via the FROM_EMAIL environment variable only
     const fromEmail = process.env.FROM_EMAIL;
     if (!fromEmail) {
-      throw new Error("FROM_EMAIL environment variable must be set");
+      throw new Error(errorMessages.fromEmailMissing);
     }
 
     this.fromEmail = fromEmail;
@@ -50,20 +51,15 @@ class ConfigManager {
   private loadClientsFromEnv(): Map<string, ClientConfig> {
     const clientsJson = process.env.CLIENTS_CONFIG;
     if (!clientsJson) {
-      throw new Error(
-        "CLIENTS_CONFIG environment variable must be set (JSON format)"
-      );
+      throw new Error(errorMessages.clientsConfigMissing);
     }
 
     try {
       const clientsObj = JSON.parse(clientsJson);
       return new Map(Object.entries(clientsObj));
     } catch (error) {
-      throw new Error(
-        `CLIENTS_CONFIG must be valid JSON. Error: ${
-          error instanceof Error ? error.message : "Unknown error"
-        }`
-      );
+      const errorMessage = error instanceof Error ? error.message : errorMessages.unknownError;
+      throw new Error(errorMessages.clientsConfigInvalid(errorMessage));
     }
   }
 
@@ -78,9 +74,7 @@ class ConfigManager {
   getClientConfig(clientId: string): ClientConfig {
     const clientConfig = this.clients.get(clientId);
     if (!clientConfig) {
-      throw new Error(
-        `Client configuration not found for clientId: ${clientId}`
-      );
+      throw new Error(errorMessages.clientConfigNotFound(clientId));
     }
     return clientConfig;
   }

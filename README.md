@@ -8,6 +8,7 @@ A compact Node.js/Express/TypeScript REST API that receives contact-form submiss
 
 - Single `POST /api/contact` endpoint
 - Email delivery via the `resend` library
+- Spam protection (message size and rate limiting)
 - Minimal, maintainable structure (`routes`, `services`, `utils`)
 - TypeScript code with strict settings
 - Docker-ready with multi-stage build
@@ -23,7 +24,7 @@ contact-form-api/
 │   ├── index.ts                 # Express app entry point (loads .env first)
 │   ├── routes/contact.ts        # /api/contact route
 │   ├── services/emailService.ts # Sends email via Resend
-│   └── utils/                   # helpers (config, template, resend client)
+│   └── utils/                   # helpers (config, template, resend client, limiters)
 ├── config/settings.json         # App settings (note: fromEmail is ignored, use FROM_EMAIL)
 ├── Dockerfile
 ├── docker-compose.yml
@@ -50,7 +51,7 @@ RESEND_API_KEY=your_resend_api_key_here
 FROM_EMAIL=sender@yourdomain.com
 PORT=3000
 NODE_ENV=development
-CLIENTS_CONFIG={"default":{"toEmail":"recipient@example.com","fromName":"Contact Form"},"acme":{"toEmail":"acme@example.com","fromName":"ACME Form"}}
+CLIENTS_CONFIG={"default":{"toEmail":"recipient@example.com","fromName":"Contact Form","maxMessageSize":10000,"hourlyRateLimit":20},"acme":{"toEmail":"acme@example.com","fromName":"ACME Form"}}
 ```
 
 **Important**:
@@ -66,7 +67,7 @@ Pass environment variables directly to the container:
 docker run -p 3000:3000 \
   -e RESEND_API_KEY=your_key \
   -e FROM_EMAIL=sender@domain.com \
-  -e CLIENTS_CONFIG='{"default":{"toEmail":"recipient@domain.com","fromName":"Form"}}' \
+  -e 'CLIENTS_CONFIG={"default":{"toEmail":"recipient@domain.com","fromName":"Form","maxMessageSize":10000,"hourlyRateLimit":20}}' \
   contact-form-api:1.0.0
 ```
 
@@ -81,6 +82,10 @@ docker-compose up
 ### POST /api/contact/:clientId
 
 Accepts any JSON body and sends an email listing all fields and their content to the recipient configured for that client. The `clientId` identifies which client configuration to use.
+
+This endpoint is protected by two spam-control mechanisms:
+1.  **Message Size Limit**: If `maxMessageSize` is configured for the client, requests with a `message` field larger than the specified size (in bytes) will be rejected with a `413 Payload Too Large` error.
+2.  **Rate Limiting**: If `hourlyRateLimit` is configured, the API will limit the number of requests per hour from a single IP address. If the limit is exceeded, requests will be rejected with a `429 Too Many Requests` error.
 
 Example request:
 
@@ -118,8 +123,10 @@ Health check — returns a 200 JSON response in French:
 
 Client configurations are defined in the `CLIENTS_CONFIG` environment variable as a JSON object. Each client ID maps to an object with:
 
-- **`toEmail`** — recipient address for form submissions
-- **`fromName`** — sender name displayed in emails
+- **`toEmail`** — (Required) Recipient address for form submissions.
+- **`fromName`** — (Required) Sender name displayed in emails.
+- **`maxMessageSize`** — (Optional) The maximum size of the `message` field in bytes.
+- **`hourlyRateLimit`** — (Optional) The maximum number of submissions allowed from a single IP address per hour.
 
 Example `CLIENTS_CONFIG`:
 
@@ -127,7 +134,9 @@ Example `CLIENTS_CONFIG`:
 {
   "default": {
     "toEmail": "default@example.com",
-    "fromName": "Default Contact Form"
+    "fromName": "Default Contact Form",
+    "maxMessageSize": 10000,
+    "hourlyRateLimit": 20
   },
   "acme-corp": {
     "toEmail": "forms@acme.com",
@@ -139,7 +148,7 @@ Example `CLIENTS_CONFIG`:
 Add this to your `.env` file as a single line (JSON must be valid):
 
 ```env
-CLIENTS_CONFIG={"default":{"toEmail":"default@example.com","fromName":"Default Contact Form"},"acme-corp":{"toEmail":"forms@acme.com","fromName":"ACME Contact Form"}}
+CLIENTS_CONFIG={"default":{"toEmail":"default@example.com","fromName":"Default Contact Form","maxMessageSize":10000,"hourlyRateLimit":20},"acme-corp":{"toEmail":"forms@acme.com","fromName":"ACME Contact Form"}}
 ```
 
 ## Docker
@@ -152,14 +161,15 @@ docker-compose up
 
 ## Notes
 
-- The API intentionally accepts any JSON payload — there is no validation. The email template will render each field and its stringified value.
+- The API intentionally accepts any JSON payload — there is no validation beyond the optional `maxMessageSize` limit. The email template will render each field and its stringified value.
+- The in-memory rate limiter is suitable for single-instance deployments. For a clustered environment, a more robust solution is needed (see below).
 - Keep your API keys and `FROM_EMAIL` secret and out of source control.
 
 ## Next steps / Suggestions
 
 - Add authentication or an API key to protect the endpoint if it will be exposed publicly.
+- Enhance rate-limiting with a persistent store (e.g., Redis) for multi-instance deployments.
 - Add logging/monitoring (Winston, Pino, Sentry).
-- Add rate-limiting / abuse protection.
 
 ## License
 

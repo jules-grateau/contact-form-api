@@ -4,6 +4,8 @@ dotenv.config();
 import express from "express";
 import contactRoutes from "./routes/contact";
 import { configManager } from "./utils/config";
+import { errorMessages, successMessages } from "./i18n/fr";
+
 const app = express();
 const apiConfig = configManager.getApiConfig();
 
@@ -15,7 +17,7 @@ app.use(express.urlencoded({ limit: "1mb", extended: true }));
 app.get("/health", (req, res) => {
   res.status(200).json({
     success: true,
-    message: "API opérationnelle",
+    message: successMessages.apiOperational,
     timestamp: new Date().toISOString(),
   });
 });
@@ -27,8 +29,8 @@ app.use(apiConfig.prefix, contactRoutes);
 app.use((req, res) => {
   res.status(404).json({
     success: false,
-    message: "Point de terminaison introuvable",
-    error: `${req.method} ${req.path} introuvable`,
+    message: errorMessages.endpointNotFound,
+    error: `${req.method} ${req.path} ${errorMessages.notFound}`,
   });
 });
 
@@ -43,8 +45,8 @@ app.use(
     console.error("Error:", err);
     res.status(500).json({
       success: false,
-      message: "Erreur interne du serveur",
-      error: err.message || "Erreur inconnue",
+      message: errorMessages.internalServerError,
+      error: err.message || errorMessages.unknownError,
     });
   }
 );
@@ -58,3 +60,4 @@ app.listen(PORT, () => {
   console.log(`✓ API prefix: ${apiConfig.prefix}`);
   console.log(`✓ Environment: ${process.env.NODE_ENV || "development"}`);
 });
+
