@@ -13,6 +13,13 @@ const apiConfig = configManager.getApiConfig();
 app.use(express.json({ limit: "1mb" }));
 app.use(express.urlencoded({ limit: "1mb", extended: true }));
 
+// Enable CORS only in non-production (development/test)
+if ((process.env.NODE_ENV || "development") !== "production") {
+  // eslint-disable-next-line @typescript-eslint/no-var-requires
+  const cors = require("cors");
+  app.use(cors());
+}
+
 // Health check endpoint
 app.get("/health", (req, res) => {
   res.status(200).json({
