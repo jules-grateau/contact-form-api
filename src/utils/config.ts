@@ -7,6 +7,7 @@ interface ClientConfig {
   fromName: string;
   maxMessageSize?: number;
   hourlyRateLimit?: number;
+  origin?: string;
 }
 
 interface AppSettings {
@@ -58,7 +59,8 @@ class ConfigManager {
       const clientsObj = JSON.parse(clientsJson);
       return new Map(Object.entries(clientsObj));
     } catch (error) {
-      const errorMessage = error instanceof Error ? error.message : errorMessages.unknownError;
+      const errorMessage =
+        error instanceof Error ? error.message : errorMessages.unknownError;
       throw new Error(errorMessages.clientsConfigInvalid(errorMessage));
     }
   }
@@ -82,6 +84,17 @@ class ConfigManager {
   getApiConfig() {
     return this.settings.api;
   }
+
+  getAllowedOrigins(): string[] {
+    const origins: string[] = [];
+    for (const [, cfg] of this.clients) {
+      if (cfg && (cfg as any).origin) {
+        origins.push((cfg as any).origin);
+      }
+    }
+    return Array.from(new Set(origins));
+  }
 }
 
 export const configManager = new ConfigManager();
+

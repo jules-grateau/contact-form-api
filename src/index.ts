@@ -5,6 +5,7 @@ import express from "express";
 import contactRoutes from "./routes/contact";
 import { configManager } from "./utils/config";
 import { errorMessages, successMessages } from "./i18n/fr";
+import cors from "cors";
 
 const app = express();
 const apiConfig = configManager.getApiConfig();
@@ -14,10 +15,33 @@ app.use(express.json({ limit: "1mb" }));
 app.use(express.urlencoded({ limit: "1mb", extended: true }));
 
 // Enable CORS only in non-production (development/test)
+// Configure CORS: allow all in non-production, restrict in production to client origins
 if ((process.env.NODE_ENV || "development") !== "production") {
-  // eslint-disable-next-line @typescript-eslint/no-var-requires
-  const cors = require("cors");
   app.use(cors());
+} else {
+  const allowedOrigins = configManager.getAllowedOrigins();
+  console.log("✓ CORS allowed origins:", allowedOrigins);
+
+  const corsOptions = {
+    origin: (origin: string | undefined, callback: any) => {
+      if (!origin) {
+        console.log("⚠ CORS request with no origin header (allowed)");
+        return callback(null, true);
+      }
+      if (allowedOrigins.indexOf(origin) !== -1) {
+        console.log(`✓ CORS request from ${origin} allowed`);
+        return callback(null, true);
+      }
+      console.log(
+        `✗ CORS request from ${origin} rejected. Allowed: ${allowedOrigins.join(
+          ", "
+        )}`
+      );
+      return callback(new Error("Not allowed by CORS"));
+    },
+  };
+
+  app.use(cors(corsOptions));
 }
 
 // Health check endpoint

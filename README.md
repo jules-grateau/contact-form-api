@@ -9,6 +9,7 @@ A compact Node.js/Express/TypeScript REST API that receives contact-form submiss
 - Single `POST /api/contact` endpoint
 - Email delivery via the `resend` library
 - Spam protection (message size and rate limiting)
+- CORS support: open in development, restricted to configured client origins in production
 - Minimal, maintainable structure (`routes`, `services`, `utils`)
 - TypeScript code with strict settings
 - Docker-ready with multi-stage build
@@ -38,9 +39,14 @@ Required environment variables:
 
 - `RESEND_API_KEY` — your Resend API key (required)
 - `FROM_EMAIL` — sender email address used in the `From:` header (required)
-- `CLIENTS_CONFIG` — JSON object defining clients and their email recipients (required)
+- `CLIENTS_CONFIG` — JSON object defining clients, their email recipients, and allowed origins (required)
 - `PORT` — server port (default: `3000`)
 - `NODE_ENV` — environment (`development`/`production`)
+
+### CORS Policy
+
+- **Development**: CORS is fully open (all origins allowed)
+- **Production**: CORS is restricted to origins defined in `CLIENTS_CONFIG` for each client
 
 ### Local development
 
@@ -84,6 +90,7 @@ docker-compose up
 Accepts any JSON body and sends an email listing all fields and their content to the recipient configured for that client. The `clientId` identifies which client configuration to use.
 
 This endpoint is protected by two spam-control mechanisms:
+
 1.  **Message Size Limit**: If `maxMessageSize` is configured for the client, requests with a `message` field larger than the specified size (in bytes) will be rejected with a `413 Payload Too Large` error.
 2.  **Rate Limiting**: If `hourlyRateLimit` is configured, the API will limit the number of requests per hour from a single IP address. If the limit is exceeded, requests will be rejected with a `429 Too Many Requests` error.
 
@@ -125,22 +132,25 @@ Client configurations are defined in the `CLIENTS_CONFIG` environment variable a
 
 - **`toEmail`** — (Required) Recipient address for form submissions.
 - **`fromName`** — (Required) Sender name displayed in emails.
+- **`origin`** — (Optional) Client domain allowed in CORS for production. If not specified, requests from that domain will be blocked in production.
 - **`maxMessageSize`** — (Optional) The maximum size of the `message` field in bytes.
 - **`hourlyRateLimit`** — (Optional) The maximum number of submissions allowed from a single IP address per hour.
 
-Example `CLIENTS_CONFIG`:
+Example `CLIENTS_CONFIG` (with CORS origins):
 
 ```json
 {
   "default": {
     "toEmail": "default@example.com",
     "fromName": "Default Contact Form",
+    "origin": "https://example.com",
     "maxMessageSize": 10000,
     "hourlyRateLimit": 20
   },
   "acme-corp": {
     "toEmail": "forms@acme.com",
-    "fromName": "ACME Contact Form"
+    "fromName": "ACME Contact Form",
+    "origin": "https://acme.example.com"
   }
 }
 ```
@@ -148,7 +158,7 @@ Example `CLIENTS_CONFIG`:
 Add this to your `.env` file as a single line (JSON must be valid):
 
 ```env
-CLIENTS_CONFIG={"default":{"toEmail":"default@example.com","fromName":"Default Contact Form","maxMessageSize":10000,"hourlyRateLimit":20},"acme-corp":{"toEmail":"forms@acme.com","fromName":"ACME Contact Form"}}
+CLIENTS_CONFIG={"default":{"toEmail":"default@example.com","fromName":"Default Contact Form","origin":"https://example.com","maxMessageSize":10000,"hourlyRateLimit":20},"acme-corp":{"toEmail":"forms@acme.com","fromName":"ACME Contact Form","origin":"https://acme.example.com"}}
 ```
 
 ## Docker
